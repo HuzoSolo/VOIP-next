@@ -48,7 +48,7 @@ export function Sidebar({ user, isOpen, onToggle }: SidebarProps) {
     { href: '/dashboard/voice-calls', label: 'Voice Calls', icon: PhoneCall },
     { href: '/dashboard/video-calls', label: 'Video Calls', icon: Video },
     { href: '/dashboard/friends', label: 'Friends', icon: Users },
-    { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+    { href: '/dashboard/profile', label: 'Settings', icon: Settings },
   ];
 
   return (
@@ -124,12 +124,14 @@ export function Sidebar({ user, isOpen, onToggle }: SidebarProps) {
         </div>
       </ScrollArea>
       
+      
       <div className="p-4 border-t">
         <div className={cn(
           "flex items-center",
           isOpen ? "justify-between" : "justify-center"
         )}>
           {isOpen && (
+            <Link href="/dashboard/profile">
             <div className="flex items-center">
               <Avatar className="h-8 w-8 mr-2">
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -140,6 +142,7 @@ export function Sidebar({ user, isOpen, onToggle }: SidebarProps) {
                 <p className="text-xs text-muted-foreground">{user.status}</p>
               </div>
             </div>
+            </Link>
           )}
           
           <Button variant="ghost" size="icon">
@@ -147,6 +150,7 @@ export function Sidebar({ user, isOpen, onToggle }: SidebarProps) {
           </Button>
         </div>
       </div>
+      
     </div>
   );
 }

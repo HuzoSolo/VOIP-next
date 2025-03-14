@@ -5,6 +5,8 @@ import { PhoneCall, Video, MessageSquare, UserPlus } from 'lucide-react';
 
 export default function DashboardPage() {
   // Mock recent activity data
+
+
   const recentActivity = [
     { id: '1', type: 'call', user: 'Alice Smith', time: '10 minutes ago', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
     { id: '2', type: 'message', user: 'Bob Johnson', time: '30 minutes ago', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },

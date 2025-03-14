@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -17,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover } from '../ui/popover';
 
 type HeaderProps = {
   title: string;
@@ -37,9 +40,10 @@ export function Header({ title, user, notifications = false, onMenuClick }: Head
         <Button variant="ghost" size="icon" onClick={onMenuClick} className="md:hidden mr-2">
           <Menu className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-semibold">{title}</h1>
+        <h1 className="text-xl font-semibold">Landing Page</h1>
       </div>
       
+      {/* search bar 
       <div className="hidden md:flex items-center max-w-md w-full mx-4">
         <div className="relative w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -50,6 +54,7 @@ export function Header({ title, user, notifications = false, onMenuClick }: Head
           />
         </div>
       </div>
+      */}
       
       <div className="flex items-center space-x-2">
         <DropdownMenu>
@@ -72,16 +77,15 @@ export function Header({ title, user, notifications = false, onMenuClick }: Head
         </DropdownMenu>
         
         {notifications && (
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-          </Button>
+          
+          <Link href="/notifications">
+            <Button variant="ghost" size="icon" className="relative" >
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+            </Button>
+          </Link>
         )}
         
-        <Avatar>
-          <AvatarImage src={user.avatar} alt={user.name} />
-          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-        </Avatar>
       </div>
     </header>
   );

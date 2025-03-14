@@ -42,7 +42,7 @@ export default function Home() {
             <Button className="w-full">Login</Button>
           </Link>
           <Link href="/register">
-            <Button variant="outline" className="w-full">Create Account</Button>
+            <Button variant="outline" className="w-full mt-3">Create Account</Button>
           </Link>
         </div>
       </div>
