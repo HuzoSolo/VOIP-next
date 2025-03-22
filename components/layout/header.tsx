@@ -40,7 +40,7 @@ export function Header({ title, user, notifications = false, onMenuClick }: Head
         <Button variant="ghost" size="icon" onClick={onMenuClick} className="md:hidden mr-2">
           <Menu className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-semibold">Landing Page</h1>
+        <h1 className="text-xl font-semibold">{title}</h1>
       </div>
       
       {/* search bar 

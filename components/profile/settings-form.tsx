@@ -6,38 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { Toast } from '@/components/ui/toast';
+import { toast } from '@/hooks/use-toast';
 import { Bell, Lock, User } from 'lucide-react';
+import bcrypt from 'bcryptjs';
 
-const profileSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  bio: z.string().optional(),
-  location: z.string().optional(),
-  phone: z.string().optional(),
-});
+type ProfileFormValues = {
+  name: string;
+  email: string;
+  bio: string;
+  location: string;
+  phone: string;
+};
 
-const notificationSchema = z.object({
-  emailNotifications: z.boolean(),
-  pushNotifications: z.boolean(),
-  callNotifications: z.boolean(),
-  messageNotifications: z.boolean(),
-  friendRequestNotifications: z.boolean(),
-});
+type NotificationFormValues = {
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  callNotifications: boolean;
+  messageNotifications: boolean;
+  friendRequestNotifications: boolean;
+};
 
-const securitySchema = z.object({
-  currentPassword: z.string().min(1, { message: "Current password is required" }),
-  newPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  confirmPassword: z.string().min(8, { message: "Password must be at least 8 characters" }),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+type SecurityFormValues = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
 
 type SettingsFormProps = {
   user: {
@@ -53,9 +49,9 @@ type SettingsFormProps = {
 
 export function SettingsForm({ user, onSave }: SettingsFormProps) {
   const [activeTab, setActiveTab] = useState("profile");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const profileForm = useForm<z.infer<typeof profileSchema>>({
-    resolver: zodResolver(profileSchema),
+  const profileForm = useForm<ProfileFormValues>({
     defaultValues: {
       name: user.name,
       email: user.email,
@@ -65,8 +61,7 @@ export function SettingsForm({ user, onSave }: SettingsFormProps) {
     },
   });
   
-  const notificationForm = useForm<z.infer<typeof notificationSchema>>({
-    resolver: zodResolver(notificationSchema),
+  const notificationForm = useForm<NotificationFormValues>({
     defaultValues: {
       emailNotifications: true,
       pushNotifications: true,
@@ -76,8 +71,7 @@ export function SettingsForm({ user, onSave }: SettingsFormProps) {
     },
   });
   
-  const securityForm = useForm<z.infer<typeof securitySchema>>({
-    resolver: zodResolver(securitySchema),
+  const securityForm = useForm<SecurityFormValues>({
     defaultValues: {
       currentPassword: '',
       newPassword: '',
@@ -85,33 +79,215 @@ export function SettingsForm({ user, onSave }: SettingsFormProps) {
     },
   });
 
-  function handleProfileSubmit(values: z.infer<typeof profileSchema>) {
-    onSave({ ...values, type: 'profile' });
-    Toast({
+  function handleProfileSubmit(values: ProfileFormValues) {
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate form
+    let hasErrors = false;
+    const newErrors: Record<string, string> = {};
+    
+    if (!values.name || values.name.length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+      hasErrors = true;
+    }
+    
+    if (!values.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+      newErrors.email = "Please enter a valid email address";
+      hasErrors = true;
+    }
+    
+    if (hasErrors) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    // Create payload: base64 encoded string of all values concatenated
+    const payload = btoa(`${values.name}:${values.email}:${values.bio}:${values.location}:${values.phone}`);
+    
+    // TEST: Log the payload and show decoded version
+    console.log('Profile Encoded payload:', payload);
+    console.log('Profile Decoded payload:', atob(payload));
+    
+    // Create a test element to display the payload (will be removed in production)
+    const testDiv = document.createElement('div');
+    testDiv.style.padding = '10px';
+    testDiv.style.margin = '10px 0';
+    testDiv.style.border = '1px solid #ccc';
+    testDiv.style.borderRadius = '4px';
+    testDiv.style.backgroundColor = '#f5f5f5';
+    
+    testDiv.innerHTML = `
+      <h3>Profile Test Payload (Remove in production)</h3>
+      <p><strong>Encoded:</strong> ${payload}</p>
+      <p><strong>Decoded:</strong> ${atob(payload)}</p>
+    `;
+    
+    // Add to the form
+    const formElement = document.querySelector('form');
+    if (formElement) {
+      formElement.appendChild(testDiv);
+    }
+    
+    // TEST: Send to test API endpoint
+    try {
+      fetch('/api/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ payload, type: 'profile' }),
+      })
+      .then(response => response.json())
+      .then(testResult => {
+        console.log('Test API response:', testResult);
+        
+        // Display test result
+        const testResultDiv = document.createElement('div');
+        testResultDiv.style.padding = '10px';
+        testResultDiv.style.margin = '10px 0';
+        testResultDiv.style.border = '1px solid #4CAF50';
+        testResultDiv.style.borderRadius = '4px';
+        testResultDiv.style.backgroundColor = '#E8F5E9';
+        
+        testResultDiv.innerHTML = `
+          <h3>Test API Response (Remove in production)</h3>
+          <pre>${JSON.stringify(testResult, null, 2)}</pre>
+        `;
+        
+        if (formElement) {
+          formElement.appendChild(testResultDiv);
+        }
+      });
+    } catch (testError) {
+      console.error('Error testing API:', testError);
+    }
+    
+    // Call the onSubmit function with the payload
+    onSave({ payload, type: 'profile' });
+    
+    toast({
       title: "Profile updated",
       description: "Your profile information has been updated successfully.",
     });
   }
   
-  function handleNotificationSubmit(values: z.infer<typeof notificationSchema>) {
-    onSave({ ...values, type: 'notifications' });
+  function handleNotificationSubmit(values: NotificationFormValues) {
+    // Create payload: base64 encoded string of all values concatenated
+    const payload = btoa(
+      `${values.emailNotifications}:${values.pushNotifications}:${values.callNotifications}:${values.messageNotifications}:${values.friendRequestNotifications}`
+    );
+    
+    // TEST: Log the payload and show decoded version
+    console.log('Notification Encoded payload:', payload);
+    console.log('Notification Decoded payload:', atob(payload));
+    
+    // Create a test element to display the payload (will be removed in production)
+    const testDiv = document.createElement('div');
+    testDiv.style.padding = '10px';
+    testDiv.style.margin = '10px 0';
+    testDiv.style.border = '1px solid #ccc';
+    testDiv.style.borderRadius = '4px';
+    testDiv.style.backgroundColor = '#f5f5f5';
+    
+    testDiv.innerHTML = `
+      <h3>Notification Test Payload (Remove in production)</h3>
+      <p><strong>Encoded:</strong> ${payload}</p>
+      <p><strong>Decoded:</strong> ${atob(payload)}</p>
+    `;
+    
+    // Add to the form
+    const formElement = document.querySelector('form');
+    if (formElement) {
+      formElement.appendChild(testDiv);
+    }
+    
+    // Call the onSubmit function with the payload
+    onSave({ payload, type: 'notifications' });
+    
     toast({
       title: "Notification preferences saved",
       description: "Your notification settings have been updated.",
     });
   }
   
-  function handleSecuritySubmit(values: z.infer<typeof securitySchema>) {
-    onSave({ ...values, type: 'security' });
-    toast({
-      title: "Password changed",
-      description: "Your password has been updated successfully.",
-    });
-    securityForm.reset({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
+  async function handleSecuritySubmit(values: SecurityFormValues) {
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate form
+    let hasErrors = false;
+    const newErrors: Record<string, string> = {};
+    
+    if (!values.currentPassword) {
+      newErrors.currentPassword = "Current password is required";
+      hasErrors = true;
+    }
+    
+    if (!values.newPassword || values.newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
+      hasErrors = true;
+    }
+    
+    if (values.newPassword !== values.confirmPassword) {
+      newErrors.confirmPassword = "Passwords don't match";
+      hasErrors = true;
+    }
+    
+    if (hasErrors) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    try {
+      // Hash passwords with bcrypt
+      const hashedOldPassword = await bcrypt.hash(values.currentPassword, 10);
+      const hashedNewPassword = await bcrypt.hash(values.newPassword, 10);
+      
+      // Create payload: base64(bcrypted_old_password:bcrypted_new_password)
+      const payload = btoa(`${hashedOldPassword}:${hashedNewPassword}`);
+      
+      // TEST: Log the payload and show decoded version
+      console.log('Security Encoded payload:', payload);
+      console.log('Security Decoded payload:', atob(payload));
+      
+      // Create a test element to display the payload (will be removed in production)
+      const testDiv = document.createElement('div');
+      testDiv.style.padding = '10px';
+      testDiv.style.margin = '10px 0';
+      testDiv.style.border = '1px solid #ccc';
+      testDiv.style.borderRadius = '4px';
+      testDiv.style.backgroundColor = '#f5f5f5';
+      
+      testDiv.innerHTML = `
+        <h3>Security Test Payload (Remove in production)</h3>
+        <p><strong>Encoded:</strong> ${payload}</p>
+        <p><strong>Decoded:</strong> ${atob(payload)}</p>
+      `;
+      
+      // Add to the form
+      const formElement = document.querySelector('form');
+      if (formElement) {
+        formElement.appendChild(testDiv);
+      }
+      
+      // Call the onSubmit function with the payload
+      onSave({ payload, type: 'security' });
+      
+      toast({
+        title: "Password changed",
+        description: "Your password has been updated successfully.",
+      });
+      
+      securityForm.reset({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error) {
+      console.error('Error processing form:', error);
+      setErrors({ form: 'An error occurred while processing your request' });
+    }
   }
 
   return (
@@ -140,264 +316,191 @@ export function SettingsForm({ user, onSave }: SettingsFormProps) {
           </TabsList>
           
           <TabsContent value="profile" className="space-y-4">
-            <Form {...profileForm}>
-              <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-4">
-                <FormField
-                  control={profileForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input 
+                  id="name"
+                  placeholder="Your name" 
+                  {...profileForm.register('name')}
                 />
-                
-                <FormField
-                  control={profileForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Your email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email"
+                  type="email" 
+                  placeholder="Your email" 
+                  {...profileForm.register('email')}
                 />
-                
-                <FormField
-                  control={profileForm.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Tell us about yourself" 
-                          className="resize-none min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Brief description for your profile. Maximum 160 characters.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea 
+                  id="bio"
+                  placeholder="Tell us about yourself" 
+                  className="resize-none min-h-[100px]"
+                  {...profileForm.register('bio')}
                 />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={profileForm.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Location</FormLabel>
-                        <FormControl>
-                          <Input placeholder="City, Country" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={profileForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Your phone number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                <p className="text-sm text-muted-foreground">
+                  Brief description for your profile. Maximum 160 characters.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input 
+                    id="location"
+                    placeholder="City, Country" 
+                    {...profileForm.register('location')}
                   />
                 </div>
                 
-                <div className="flex justify-end">
-                  <Button type="submit">Save Profile</Button>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input 
+                    id="phone"
+                    placeholder="Your phone number" 
+                    {...profileForm.register('phone')}
+                  />
                 </div>
-              </form>
-            </Form>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button type="submit">Save Profile</Button>
+              </div>
+            </form>
           </TabsContent>
           
           <TabsContent value="notifications" className="space-y-4">
-            <Form {...notificationForm}>
-              <form onSubmit={notificationForm.handleSubmit(handleNotificationSubmit)} className="space-y-4">
-                <div className="space-y-4">
-                  <FormField
-                    control={notificationForm.control}
-                    name="emailNotifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Email Notifications</FormLabel>
-                          <FormDescription>
-                            Receive email notifications about account activity
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={notificationForm.control}
-                    name="pushNotifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Push Notifications</FormLabel>
-                          <FormDescription>
-                            Receive push notifications on your devices
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={notificationForm.control}
-                    name="callNotifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Call Notifications</FormLabel>
-                          <FormDescription>
-                            Get notified about incoming voice and video calls
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={notificationForm.control}
-                    name="messageNotifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Message Notifications</FormLabel>
-                          <FormDescription>
-                            Get notified about new messages
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={notificationForm.control}
-                    name="friendRequestNotifications"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Friend Request Notifications</FormLabel>
-                          <FormDescription>
-                            Get notified about new friend requests
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
+            <form onSubmit={notificationForm.handleSubmit(handleNotificationSubmit)} className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive email notifications about account activity
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationForm.watch('emailNotifications')}
+                    onCheckedChange={(checked) => notificationForm.setValue('emailNotifications', checked)}
+                    disabled={true}
                   />
                 </div>
                 
-                <div className="flex justify-end">
-                  <Button type="submit">Save Notification Settings</Button>
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Push Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive push notifications on your devices
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationForm.watch('pushNotifications')}
+                    onCheckedChange={(checked) => notificationForm.setValue('pushNotifications', checked)}
+                    disabled={true}
+                  />
                 </div>
-              </form>
-            </Form>
+                
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Call Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified about incoming voice and video calls
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationForm.watch('callNotifications')}
+                    onCheckedChange={(checked) => notificationForm.setValue('callNotifications', checked)}
+                    disabled={true}
+                  />
+                </div>
+                
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Message Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified about new messages
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationForm.watch('messageNotifications')}
+                    onCheckedChange={(checked) => notificationForm.setValue('messageNotifications', checked)}
+                    disabled={true}
+                  />
+                </div>
+                
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Friend Request Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified about new friend requests
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationForm.watch('friendRequestNotifications')}
+                    onCheckedChange={(checked) => notificationForm.setValue('friendRequestNotifications', checked)}
+                    disabled={true}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button type="submit">Save Notification Settings</Button>
+              </div>
+            </form>
           </TabsContent>
           
           <TabsContent value="security" className="space-y-4">
-            <Form {...securityForm}>
-              <form onSubmit={securityForm.handleSubmit(handleSecuritySubmit)} className="space-y-4">
-                <FormField
-                  control={securityForm.control}
-                  name="currentPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Current Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={securityForm.handleSubmit(handleSecuritySubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input 
+                  id="currentPassword"
+                  type="password" 
+                  placeholder="••••••••" 
+                  {...securityForm.register('currentPassword')}
                 />
-                
-                <FormField
-                  control={securityForm.control}
-                  name="newPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Password must be at least 8 characters and include a number
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                {errors.currentPassword && <p className="text-sm text-red-500">{errors.currentPassword}</p>}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input 
+                  id="newPassword"
+                  type="password" 
+                  placeholder="••••••••" 
+                  {...securityForm.register('newPassword')}
                 />
-                
-                <FormField
-                  control={securityForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm New Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                <p className="text-sm text-muted-foreground">
+                  Password must be at least 8 characters and include a number
+                </p>
+                {errors.newPassword && <p className="text-sm text-red-500">{errors.newPassword}</p>}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input 
+                  id="confirmPassword"
+                  type="password" 
+                  placeholder="••••••••" 
+                  {...securityForm.register('confirmPassword')}
                 />
-                
-                <div className="flex justify-end">
-                  <Button type="submit">Update Password</Button>
-                </div>
-              </form>
-            </Form>
+                {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
+              </div>
+              
+              {errors.form && <p className="text-sm text-red-500">{errors.form}</p>}
+              
+              <div className="flex justify-end">
+                <Button type="submit">Update Password</Button>
+              </div>
+            </form>
             
             <div className="mt-8 pt-6 border-t">
               <h3 className="text-lg font-medium mb-4">Two-Factor Authentication</h3>

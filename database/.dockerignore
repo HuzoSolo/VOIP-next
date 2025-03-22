@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Node.js (if you have a Node.js application)
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.*
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*
+
+# Documentation
+README.md
+LICENSE
+*.md
+
+# Build artifacts
+dist
+build
+*.tar.gz
+*.zip 

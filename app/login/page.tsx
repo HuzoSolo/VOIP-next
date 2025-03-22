@@ -20,7 +20,34 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <AuthForm onSubmit={(data) => console.log('Login submitted:', data)} type="login" />
+          <AuthForm onSubmit={async (data) => {
+            try {
+              const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                
+                
+              });
+
+              
+
+              if (!response.ok) {
+                throw new Error('Login failed');
+              }
+
+              const result = await response.json();
+
+              
+              
+              // Handle successful login, e.g. redirect
+            } catch (error) {
+              console.error('Login error:', error);
+              // Handle error state
+            }
+          }} type="login" />
           
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
